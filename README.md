@@ -53,7 +53,12 @@ curl -X POST localhost:8000/sql -H 'content-type: application/json' \
 curl -X POST localhost:8000/sql -H 'content-type: application/json' \
      -d '{"question": "How many customers are there?", "schema": "CREATE TABLE customers (customer_id INTEGER, name VARCHAR, city VARCHAR)"}'
 ```
-Endpoints: `POST /sql`, `GET /databases`, `GET /metrics` (the Spider numbers above), `GET /health`.
+Open **http://localhost:8000** for a small web page: pick a Spider database or paste your own schema,
+ask a question, and see the SQL and its result. For a Spider dev question, the page also shows the gold
+SQL and whether the results match. Interactive API docs are at `/docs`.
+
+Endpoints: `POST /sql`, `GET /databases`, `GET /schema/{db_id}`, `GET /examples/{db_id}`,
+`GET /metrics` (the Spider numbers above), `GET /health`.
 The response contains the generated SQL itself, so a caller can check what would run. Given the
 ~10% accuracy, treat it as a demo of the harness, not a production model.
 
@@ -101,6 +106,7 @@ src/metrics.py           # execution, result matching, Wilson CI, McNemar
 src/report.py            # result tables
 src/nl2sql.py            # question -> SQL with the fine-tuned model (used by notebook + API)
 src/serve.py             # FastAPI server
+src/static/index.html    # the web page served at /
 kaggle/                  # headless Kaggle runner that saves the executed notebook
 artifacts/               # seen-list and result tables (committed); predictions (gitignored)
 ```

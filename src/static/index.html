@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rosette NL→SQL</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1c1c1a; --muted: #6b6b66; --line: #e2e2dd;
+    --accent: #2f5bd3; --accent-ink: #ffffff; --code: #f1f1ed;
+    --ok: #1f7a4a; --ok-bg: #e3f3ea; --bad: #b3261e; --bad-bg: #fbe7e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --panel: #1e1e1c; --ink: #ecece8; --muted: #9a9a93; --line: #33332f;
+      --accent: #7c9cff; --accent-ink: #10131c; --code: #262623;
+      --ok: #6fd39c; --ok-bg: #1c3326; --bad: #ff8a80; --bad-bg: #3a1f1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button { flex: 0 0 auto; background: none; border: 1px solid var(--line); color: var(--ink);
+                 padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; }
+  .tabs button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  select, input[type=text], textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+         border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+  textarea { min-height: 90px; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 13px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .go { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px;
+        padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  .go:disabled { opacity: .6; cursor: wait; }
+  .check { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; }
+  details { margin-top: 10px; } summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  pre, code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 13px; }
+  pre { background: var(--code); border-radius: 8px; padding: 10px 12px; margin: 6px 0 0;
+        white-space: pre-wrap; word-break: break-word; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { background: var(--code); border: 1px solid var(--line); color: var(--ink); border-radius: 999px;
+          padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+  .chip:hover { border-color: var(--accent); }
+  .h { font-size: 13px; color: var(--muted); margin: 14px 0 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .ok { color: var(--ok); background: var(--ok-bg); } .bad { color: var(--bad); background: var(--bad-bg); }
+  .err { color: var(--bad); font-family: ui-monospace, Menlo, monospace; font-size: 13px; margin-top: 6px; }
+  .tablewrap { overflow-x: auto; margin-top: 6px; }
+  table { border-collapse: collapse; font-size: 13px; }
+  td, th { border: 1px solid var(--line); padding: 4px 8px; text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  .copy { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px;
+          font: inherit; font-size: 12px; padding: 1px 8px; cursor: pointer; }
+  .note { font-size: 13px; color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Rosette NL→SQL</h1>
+  <p class="sub">Type a question, get SQL from <code>cssupport/t5-small-awesome-text-to-sql</code>.
+    <span id="acc"></span></p>
+
+  <section class="panel">
+    <div class="tabs" role="group" aria-label="Schema source">
+      <button id="tab-db" aria-pressed="true">Spider database</button>
+      <button id="tab-custom" aria-pressed="false">Your own schema</button>
+    </div>
+
+    <div id="mode-db">
+      <label for="db">Database</label>
+      <select id="db"></select>
+      <details><summary>Schema the model sees</summary><pre id="schema"></pre></details>
+      <label>Spider questions for this database (click one; its correct SQL is shown for comparison)</label>
+      <div class="chips" id="examples"></div>
+    </div>
+
+    <div id="mode-custom" hidden>
+      <label for="custom">CREATE TABLE statements</label>
+      <textarea id="custom">CREATE TABLE customers (customer_id INTEGER, name VARCHAR, city VARCHAR, signup_date VARCHAR); CREATE TABLE orders (order_id INTEGER, customer_id INTEGER, quantity INTEGER, order_date VARCHAR)</textarea>
+      <p class="note">Generation only: there is no database behind a custom schema to run the SQL against.</p>
+    </div>
+
+    <label for="q">Question</label>
+    <input type="text" id="q" placeholder="How many singers do we have?" autocomplete="off">
+    <div class="row">
+      <button class="go" id="go">Generate SQL</button>
+      <label class="check" id="exec-wrap"><input type="checkbox" id="exec" checked> run it on the database</label>
+    </div>
+  </section>
+
+  <section class="panel" id="out" hidden>
+    <div class="h">Generated SQL <span id="ms"></span> <button class="copy" id="copy">copy</button> <span id="verdict"></span></div>
+    <pre id="sql"></pre>
+    <div id="err" class="err" hidden></div>
+    <div id="rows-wrap" hidden><div class="h">Result</div><div class="tablewrap" id="rows"></div></div>
+    <div id="gold-wrap" hidden>
+      <div class="h">Correct SQL (Spider gold)</div><pre id="gold"></pre>
+      <div class="h">Correct result</div><div class="tablewrap" id="gold-rows"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let mode = "db";
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function table(rows) {
+  if (!rows || rows.length === 0) return '<p class="note">(no rows)</p>';
+  const w = Math.max(...rows.map((r) => r.length));
+  const head = "<tr>" + Array.from({ length: w }, (_, i) => `<th>col ${i + 1}</th>`).join("") + "</tr>";
+  const body = rows.slice(0, 50).map((r) => "<tr>" + r.map((v) => `<td>${esc(v === null ? "NULL" : v)}</td>`).join("") + "</tr>").join("");
+  return `<table>${head}${body}</table>` + (rows.length >= 50 ? '<p class="note">first 50 rows</p>' : "");
+}
+
+async function getJSON(url, opts) {
+  const r = await fetch(url, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+function setMode(m) {
+  mode = m;
+  $("tab-db").setAttribute("aria-pressed", m === "db");
+  $("tab-custom").setAttribute("aria-pressed", m === "custom");
+  $("mode-db").hidden = m !== "db";
+  $("mode-custom").hidden = m !== "custom";
+  $("exec-wrap").hidden = m !== "db";
+}
+
+async function loadDb() {
+  const db = $("db").value;
+  const [s, ex] = await Promise.all([getJSON(`/schema/${db}`), getJSON(`/examples/${db}?n=12`)]);
+  $("schema").textContent = s.schema.split("; ").join(";\n");
+  $("examples").innerHTML = "";
+  for (const e of ex.examples) {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = e.question;
+    b.onclick = () => { $("q").value = e.question; ask(); };
+    $("examples").appendChild(b);
+  }
+}
+
+async function ask() {
+  const question = $("q").value.trim();
+  if (!question) { $("q").focus(); return; }
+  const body = mode === "db"
+    ? { question, db_id: $("db").value, execute: $("exec").checked }
+    : { question, schema: $("custom").value };
+  $("go").disabled = true; $("go").textContent = "Generating…";
+  try {
+    const r = await getJSON("/sql", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    $("out").hidden = false;
+    $("sql").textContent = r.sql;
+    $("ms").textContent = `· ${r.generation_ms} ms`;
+    $("err").hidden = !r.error; $("err").textContent = r.error ? "SQLite: " + r.error : "";
+    $("rows-wrap").hidden = !("rows" in r) || r.rows === null;
+    if (r.rows) $("rows").innerHTML = table(r.rows);
+    $("gold-wrap").hidden = !r.gold_sql;
+    $("verdict").innerHTML = r.gold_sql
+      ? (r.matches_gold ? '<span class="badge ok">result matches gold</span>' : '<span class="badge bad">result differs from gold</span>')
+      : "";
+    if (r.gold_sql) { $("gold").textContent = r.gold_sql; $("gold-rows").innerHTML = table(r.gold_rows); }
+  } catch (e) {
+    $("out").hidden = false; $("sql").textContent = ""; $("err").hidden = false; $("err").textContent = e.message;
+    $("rows-wrap").hidden = true; $("gold-wrap").hidden = true; $("verdict").innerHTML = "";
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Generate SQL";
+  }
+}
+
+$("tab-db").onclick = () => setMode("db");
+$("tab-custom").onclick = () => setMode("custom");
+$("db").onchange = loadDb;
+$("go").onclick = ask;
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+$("copy").onclick = () => navigator.clipboard && navigator.clipboard.writeText($("sql").textContent);
+
+(async () => {
+  const d = await getJSON("/databases");
+  for (const db of Object.keys(d.databases)) $("db").add(new Option(db, db));
+  if ($("db").options.length) { $("db").value = "concert_singer"; await loadDb(); }
+  else { setMode("custom"); $("tab-db").disabled = true; }
+  try {
+    const m = await getJSON("/metrics");
+    const row = (m.spider_dev_execution_accuracy || []).find((r) => r.subset === "unseen by fine_tuned" && r.strategy === "fine_tuned");
+    if (row) $("acc").textContent = `On unseen Spider dev questions it is right ${(100 * row.exec_acc).toFixed(1)}% of the time, so expect mistakes.`;
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
