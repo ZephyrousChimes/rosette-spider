@@ -77,7 +77,8 @@ class Query(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_loaded": _model is not None}
+    return {"status": "ok", "model_loaded": _model is not None,
+            "model": _model.model_name if _model is not None else None}
 
 
 @app.get("/databases")
