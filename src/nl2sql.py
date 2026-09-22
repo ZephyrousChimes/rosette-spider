@@ -47,9 +47,17 @@ class NL2SQL:
         if db_id is not None:
             from spider_data import schema_text
             schema = schema_text(db_id)
+
         t0 = time.perf_counter()
-        sql = self.generate(question, schema)
-        result = {"question": question, "db_id": db_id, "sql": sql,
+        extracted = None
+        if db_id is not None:
+            from extract import try_extract
+            extracted = try_extract(db_id, question)
+        if extracted is not None:
+            sql, source = extracted["sql"], "extracted"
+        else:
+            sql, source = self.generate(question, schema), "model"
+        result = {"question": question, "db_id": db_id, "sql": sql, "source": source,
                   "generation_ms": round((time.perf_counter() - t0) * 1000, 1)}
         if execute:
             if db_id is None:
