@@ -10,7 +10,13 @@ Generation is greedy, batched, and cached per strategy in artifacts/ so a
 rerun (or a Kaggle session restart) doesn't repeat it.
 """
 import json
+import os
 import time
+
+# The fine-tuned checkpoint ships only .bin weights, so transformers starts a
+# background thread that asks the Hub to convert it to safetensors; that thread
+# fails noisily and does nothing useful here.
+os.environ.setdefault("DISABLE_SAFETENSORS_CONVERSION", "1")
 
 import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -73,7 +79,7 @@ def build_prompts(dev, retriever):
 def generate(model_name, prompts, device, batch_size=32, max_new_tokens=256):
     tok = T5Tokenizer.from_pretrained(TOKENIZER_FOR[model_name])
     # fp32 on purpose: T5 activations overflow in fp16 and produce NaNs
-    model = T5ForConditionalGeneration.from_pretrained(model_name, use_safetensors=False).to(device).eval()
+    model = T5ForConditionalGeneration.from_pretrained(model_name).to(device).eval()
     # no truncation: ~8% of prompts exceed 512 tokens, and truncating from the
     # right would cut off the question. T5's relative position bias accepts
     # longer inputs.
