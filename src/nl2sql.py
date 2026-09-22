@@ -17,7 +17,7 @@ class NL2SQL:
     def __init__(self, device=None):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tok = T5Tokenizer.from_pretrained(TOKENIZER_FOR[FINETUNED_MODEL])
-        self.model = T5ForConditionalGeneration.from_pretrained(FINETUNED_MODEL).to(self.device).eval()
+        self.model = T5ForConditionalGeneration.from_pretrained(FINETUNED_MODEL, use_safetensors=False).to(self.device).eval()
 
     def generate(self, question: str, schema: str) -> str:
         prompt = "tables:\n" + schema + "\nquery for:" + question
