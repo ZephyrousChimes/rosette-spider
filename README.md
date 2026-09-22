@@ -34,7 +34,9 @@ verbatim in the fine-tuned model's training data; only that row measures general
 - **The toy 10-question result overstated it.** On that set fine_tuned scored 40% with 0%
   invalid SQL; on Spider it scores 10% with 73% invalid.
 
-Full tables are in `artifacts/*.csv`, and the executed notebook has every output.
+Full tables are in `artifacts/*.csv`. `rosette_spider.ipynb` is committed **with the outputs of the
+Kaggle T4 run**, so GitHub renders every table and example, and `results/rosette_spider.html` is a
+standalone copy. Three independent Kaggle runs produced identical tables, since decoding is greedy.
 
 ## Ask it a question (API)
 ```bash
@@ -90,7 +92,8 @@ than test-suite execution accuracy.
 
 ## Layout
 ```
-rosette_spider.ipynb     # the whole pipeline, top to bottom
+rosette_spider.ipynb     # the whole pipeline, top to bottom (committed with outputs)
+results/rosette_spider.html  # the same executed notebook as HTML
 src/spider_data.py       # download, verify, schema text
 src/contamination.py     # which dev questions the fine-tuned model trained on
 src/strategies.py        # prompts, retrieval, batched generation (cached per strategy)
