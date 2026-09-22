@@ -114,10 +114,11 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function table(rows) {
+function table(rows, columns) {
   if (!rows || rows.length === 0) return '<p class="note">(no rows)</p>';
   const w = Math.max(...rows.map((r) => r.length));
-  const head = "<tr>" + Array.from({ length: w }, (_, i) => `<th>col ${i + 1}</th>`).join("") + "</tr>";
+  const names = columns && columns.length === w ? columns : Array.from({ length: w }, (_, i) => `col ${i + 1}`);
+  const head = "<tr>" + names.map((n) => `<th>${esc(n)}</th>`).join("") + "</tr>";
   const body = rows.slice(0, 50).map((r) => "<tr>" + r.map((v) => `<td>${esc(v === null ? "NULL" : v)}</td>`).join("") + "</tr>").join("");
   return `<table>${head}${body}</table>` + (rows.length >= 50 ? '<p class="note">first 50 rows</p>' : "");
 }
@@ -166,12 +167,12 @@ async function ask() {
     $("ms").textContent = `· ${r.generation_ms} ms`;
     $("err").hidden = !r.error; $("err").textContent = r.error ? "SQLite: " + r.error : "";
     $("rows-wrap").hidden = !("rows" in r) || r.rows === null;
-    if (r.rows) $("rows").innerHTML = table(r.rows);
+    if (r.rows) $("rows").innerHTML = table(r.rows, r.columns);
     $("gold-wrap").hidden = !r.gold_sql;
     $("verdict").innerHTML = r.gold_sql
       ? (r.matches_gold ? '<span class="badge ok">result matches gold</span>' : '<span class="badge bad">result differs from gold</span>')
       : "";
-    if (r.gold_sql) { $("gold").textContent = r.gold_sql; $("gold-rows").innerHTML = table(r.gold_rows); }
+    if (r.gold_sql) { $("gold").textContent = r.gold_sql; $("gold-rows").innerHTML = table(r.gold_rows, r.gold_columns); }
   } catch (e) {
     $("out").hidden = false; $("sql").textContent = ""; $("err").hidden = false; $("err").textContent = e.message;
     $("rows-wrap").hidden = true; $("gold-wrap").hidden = true; $("verdict").innerHTML = "";

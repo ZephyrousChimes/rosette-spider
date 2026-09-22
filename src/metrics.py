@@ -34,6 +34,26 @@ def run_sql(db_id, sql, timeout_s=QUERY_TIMEOUT_S):
         conn.close()
 
 
+def run_sql_with_columns(db_id, sql, timeout_s=QUERY_TIMEOUT_S):
+    """Same as run_sql, but also returns the result columns' names (from the
+    cursor's `description`, e.g. "COUNT(*)" or an aliased column) -- for
+    display, not scoring. `results_match` still ignores column names/order,
+    same as the real Spider evaluator does."""
+    conn = sqlite3.connect(f"file:{db_path(db_id)}?mode=ro", uri=True)
+    conn.text_factory = lambda b: b.decode(errors="ignore")
+    deadline = time.monotonic() + timeout_s
+    conn.set_progress_handler(lambda: time.monotonic() > deadline, 10_000)
+    try:
+        cur = conn.execute(sql)
+        rows = cur.fetchall()
+        columns = [d[0] for d in cur.description] if cur.description else []
+        return rows, columns, None
+    except Exception as e:
+        return None, None, f"{type(e).__name__}: {e}"
+    finally:
+        conn.close()
+
+
 def has_order_by(sql):
     return re.search(r"\border\s+by\b", sql, re.I) is not None
 

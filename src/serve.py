@@ -25,7 +25,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from metrics import results_match, run_sql
+from metrics import results_match, run_sql_with_columns
 from nl2sql import NL2SQL
 from spider_data import ROOT, SPIDER_DIR, _tables, load_dev, schema_text
 
@@ -112,10 +112,11 @@ def sql(q: Query):
         raise HTTPException(status_code=400, detail=str(e))
     gold = gold_for(q.db_id, q.question) if q.db_id else None
     if gold:
-        gold_rows, _ = run_sql(q.db_id, gold)
-        pred_rows, _ = run_sql(q.db_id, result["sql"])
+        gold_rows, gold_columns, _ = run_sql_with_columns(q.db_id, gold)
+        pred_rows, _, _ = run_sql_with_columns(q.db_id, result["sql"])
         result["gold_sql"] = gold
         result["gold_rows"] = gold_rows[:50]
+        result["gold_columns"] = gold_columns
         result["matches_gold"] = results_match(gold, gold_rows, pred_rows)
     return result
 

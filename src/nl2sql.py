@@ -62,8 +62,9 @@ class NL2SQL:
         if execute:
             if db_id is None:
                 raise ValueError("execute=True needs a db_id (a Spider database to run against)")
-            from metrics import run_sql
-            rows, err = run_sql(db_id, sql)
+            from metrics import run_sql_with_columns
+            rows, columns, err = run_sql_with_columns(db_id, sql)
             result["rows"] = rows[:50] if rows is not None else None
+            result["columns"] = columns
             result["error"] = err
         return result
