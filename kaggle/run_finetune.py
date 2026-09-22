@@ -13,13 +13,12 @@ REPO = WORK / "rosette-spider"
 if not REPO.exists():
     subprocess.run(["git", "clone", "--depth", "1", REPO_URL, str(REPO)], check=True)
 
-subprocess.run(["python", "src/spider_data.py"], cwd=REPO, check=True)  # downloads + verifies Spider data
 subprocess.run(
-    ["python", "src/finetune.py", "--stage", "simple", "--epochs", "3", "--batch_size", "32"],
+    ["python", "-u", "src/finetune.py", "--stage", "simple", "--epochs", "3", "--batch_size", "32"],
     cwd=REPO, check=True,
 )
 subprocess.run(
-    ["python", "src/eval_finetuned.py", "--model_dir", str(REPO / "artifacts" / "model_simple"), "--label", "simple"],
+    ["python", "-u", "src/eval_finetuned.py", "--model_dir", str(REPO / "artifacts" / "model_simple"), "--label", "simple"],
     cwd=REPO, check=True,
 )
 print("done:", sorted(p.name for p in (REPO / "artifacts").glob("*simple*")))

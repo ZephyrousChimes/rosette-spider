@@ -24,6 +24,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 
+import spider_data
 from spider_data import ROOT, load_train, schema_text
 
 TOKENIZER_SOURCE = "t5-small"
@@ -64,6 +65,14 @@ class SqlDataset(Dataset):
 def train(stage, epochs, batch_size, lr, seed, device):
     random.seed(seed)
     torch.manual_seed(seed)
+
+    # download in-process (a separate `python spider_data.py` subprocess on
+    # Kaggle exited 0 but left train_spider.json missing -- root cause
+    # unconfirmed, possibly stdout buffering hiding a real failure; calling
+    # the function directly here removes the cross-process boundary entirely)
+    spider_data.download()
+    assert (spider_data.SPIDER_DIR / "train_spider.json").exists(), \
+        f"train_spider.json missing after download() in {spider_data.SPIDER_DIR}"
 
     data = load_train()
     if stage == "simple":

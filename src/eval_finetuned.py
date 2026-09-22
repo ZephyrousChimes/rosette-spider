@@ -18,6 +18,7 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 
 from finetune import prompt_for
 from metrics import mcnemar_exact, results_match, run_sql, wilson
+import spider_data
 from spider_data import ROOT, load_dev
 
 LADDER = [
@@ -73,6 +74,7 @@ def run_ladder(tok, model, device):
 
 
 def run_dev(tok, model, device, seen, limit=None):
+    spider_data.download()  # in-process; see the note in finetune.py
     dev = load_dev()
     if limit:
         dev = dev[:limit]
