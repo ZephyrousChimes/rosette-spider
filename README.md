@@ -10,9 +10,59 @@ unseen in Spider's training split). This scales up the evaluation from
 | `rag_fewshot` | `google/flan-t5-small` | + top-3 similar (question, SQL) pairs from Spider train, via TF-IDF |
 | `fine_tuned` | `cssupport/t5-small-awesome-text-to-sql` | schema + question, in its training format |
 
+## Results (Spider dev, Kaggle T4 run)
+Execution accuracy with 95% Wilson intervals. *Unseen* means the dev question does not appear
+verbatim in the fine-tuned model's training data; only that row measures generalization.
+
+| subset | n | zero_shot | rag_fewshot | fine_tuned |
+|---|---|---|---|---|
+| all | 1034 | 0.0% [0.0, 0.4] | 2.6% [1.8, 3.8] | **10.1%** [8.4, 12.0] |
+| unseen by fine_tuned | 468 | 0.0% [0.0, 0.8] | 1.7% [0.9, 3.3] | **9.6%** [7.3, 12.6] |
+| seen by fine_tuned | 566 | 0.0% [0.0, 0.7] | 3.4% [2.2, 5.2] | 10.4% [8.2, 13.2] |
+| invalid SQL (all) | 1034 | 99.5% | 93.5% | 73.2% |
+
+- **The ranking is significant, even on unseen questions.** In exact McNemar tests,
+  fine_tuned beats rag_fewshot 45 to 8 on discordant pairs (p = 2e-7), and rag_fewshot beats
+  zero_shot 8 to 0 (p = 0.008).
+- **Contamination barely helps.** Accuracy is 10.4% on seen questions and 9.6% on unseen ones.
+  A likely reason is that the training contexts list only the tables each query uses, while
+  here the model gets the full schema, so memorized answers don't transfer.
+- **The dominant failure is schema linking, not grammar.** 648 of fine_tuned's 930 failures
+  reference a table or column that doesn't exist, mostly a real column under the wrong table
+  alias. Only 76 are syntax errors. Accuracy on unseen questions is 13.1% for single-table
+  queries and 2.6% for joins.
+- **The toy 10-question result overstated it.** On that set fine_tuned scored 40% with 0%
+  invalid SQL; on Spider it scores 10% with 73% invalid.
+
+Full tables are in `artifacts/*.csv`, and the executed notebook has every output.
+
+## Ask it a question (API)
+```bash
+pip install -r requirements.txt
+python -c "import sys; sys.path.insert(0, 'src'); import spider_data; spider_data.download()"   # only needed for db_id / execute
+uvicorn serve:app --app-dir src --port 8000
+```
+```bash
+# against a Spider database, and run the SQL
+curl -X POST localhost:8000/sql -H 'content-type: application/json' \
+     -d '{"question": "What is the average age of all singers?", "db_id": "concert_singer", "execute": true}'
+
+# against any schema you give it (generation only)
+curl -X POST localhost:8000/sql -H 'content-type: application/json' \
+     -d '{"question": "How many customers are there?", "schema": "CREATE TABLE customers (customer_id INTEGER, name VARCHAR, city VARCHAR)"}'
+```
+Endpoints: `POST /sql`, `GET /databases`, `GET /metrics` (the Spider numbers above), `GET /health`.
+The response contains the generated SQL itself, so a caller can check what would run. Given the
+~10% accuracy, treat it as a demo of the harness, not a production model.
+
 ## Run it
 **Kaggle:** import `rosette_spider.ipynb`, set *Accelerator → GPU T4* and *Internet → On*, then
 Run All. The first cell clones this repo if the scripts aren't next to the notebook.
+
+**Kaggle, headless, with outputs saved:** `kaggle kernels push -p kaggle` runs
+`kaggle/run_notebook.py`, which executes the notebook with nbconvert and writes
+`rosette_spider_executed.ipynb` and `.html` to the run's outputs. Download them with
+`kaggle kernels output <owner>/rosette-spider-run`.
 
 **Locally:** `pip install -r requirements.txt`, then run the notebook. Set `LIMIT=40` in the
 environment for a quick subset run.
@@ -46,5 +96,8 @@ src/contamination.py     # which dev questions the fine-tuned model trained on
 src/strategies.py        # prompts, retrieval, batched generation (cached per strategy)
 src/metrics.py           # execution, result matching, Wilson CI, McNemar
 src/report.py            # result tables
-artifacts/               # seen-list (committed) and run outputs
+src/nl2sql.py            # question -> SQL with the fine-tuned model (used by notebook + API)
+src/serve.py             # FastAPI server
+kaggle/                  # headless Kaggle runner that saves the executed notebook
+artifacts/               # seen-list and result tables (committed); predictions (gitignored)
 ```

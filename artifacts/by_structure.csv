@@ -1,0 +1,7 @@
+subset,structure,n,zero_shot,rag_fewshot,fine_tuned
+unseen by fine_tuned,single-table,251,0.0,0.03187250996015936,0.13147410358565736
+unseen by fine_tuned,join,151,0.0,0.0,0.026490066225165563
+unseen by fine_tuned,nested/set-op,66,0.0,0.0,0.12121212121212122
+seen by fine_tuned,single-table,293,0.0,0.06484641638225255,0.13993174061433447
+seen by fine_tuned,join,180,0.0,0.0,0.044444444444444446
+seen by fine_tuned,nested/set-op,93,0.0,0.0,0.10752688172043011

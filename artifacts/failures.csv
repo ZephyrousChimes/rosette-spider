@@ -1,0 +1,6 @@
+,zero_shot,rag_fewshot,fine_tuned
+syntax error,936,221,76
+other exec error,90,22,33
+"runs, wrong result",5,40,173
+unknown table/column,3,724,648
+correct,0,27,104

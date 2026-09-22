@@ -2,5 +2,7 @@ torch
 transformers
 sentencepiece
 scikit-learn
+fastapi
+uvicorn
 pandas
 tqdm

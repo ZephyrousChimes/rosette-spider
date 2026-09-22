@@ -1,0 +1,10 @@
+subset,a,b,only_a_right,only_b_right,p_value
+all,fine_tuned,rag_fewshot,101,24,1.9702912858306397e-12
+all,fine_tuned,zero_shot,104,0,9.860761315262648e-32
+all,rag_fewshot,zero_shot,27,0,1.4901161193847656e-08
+unseen by fine_tuned,fine_tuned,rag_fewshot,45,8,2.3683513772354559e-07
+unseen by fine_tuned,fine_tuned,zero_shot,45,0,5.684341886080802e-14
+unseen by fine_tuned,rag_fewshot,zero_shot,8,0,0.0078125
+seen by fine_tuned,fine_tuned,rag_fewshot,56,16,2.397319809534421e-06
+seen by fine_tuned,fine_tuned,zero_shot,59,0,3.469446951953614e-18
+seen by fine_tuned,rag_fewshot,zero_shot,19,0,3.814697265625e-06
