@@ -1,0 +1,6 @@
+data/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+artifacts/preds_*.jsonl
+artifacts/spider_records.jsonl
